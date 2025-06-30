@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       refseq_version:
-        description: 'Enter a version tag for this build (e.g. v1.0, 2025.06, etc.)'
+        description: 'Enter a version tag for this build with no spaces (e.g. v1.0, 2025.06, etc.)'
         required: true
 
 jobs:
