@@ -1,37 +1,58 @@
-name: Build a mash sketch database of all fungal genomes in RefSeq
+name: Build a mash sketch database of Saccharomyces cerevisiae (and outgroup) genomes
 
 on:
   workflow_dispatch:
     inputs:
       refseq_version:
-        description: 'Enter the RefSeq version to use as a tag (e.g. v230, v231, etc.)'
+        description: 'Enter a version tag for this build (e.g., v1.0, 2025.06, etc.)'
         required: true
 
 jobs:
   # --------------------------------------------------------------------------
-  # JOB 1: Use a manually currated list of genomes, sc_ids.tsv
+  # JOB 1: Combine a manual list with NCBI's list and de-duplicate
   # --------------------------------------------------------------------------
- 
+  
   list_genomes:
     runs-on: ubuntu-latest
     steps:
-      - name: Check Out Repository
+      - name: Check Out Repository (to get manual list)
         uses: actions/checkout@v4
 
-      - name: Use the manually provided genome list
+      - name: Download NCBI Datasets Tool
         run: |
+          wget -q https://ftp.ncbi.nlm.nih.gov/pub/datasets/command-line/v2/linux-amd64/datasets
+          chmod +x datasets
+
+      - name: Combine and De-duplicate Genome Lists
+        run: |
+          export PATH=$(pwd):$PATH
+          MANUAL_LIST="sc_ids.tsv"
+          FINAL_IDS_FILE="ids.tsv"
+
           # Check if the manual file exists in the repository
-          if [ ! -f "sc_ids.tsv" ]; then
-            echo "ERROR: sc_ids.tsv not found in the repository."
+          if [ ! -f "$MANUAL_LIST" ]; then
+            echo "ERROR: Your manual list '$MANUAL_LIST' was not found in the repository."
             exit 1
           fi
-          # Copy the manual list to the name the next job expects
-          cp sc_ids.tsv
-          echo "Using manually curated list of genomes."
+          
+          echo "Fetching all S. cerevisiae (taxon 4932) reference genomes from NCBI..."
+          # Fetch the NCBI list and extract just the accession number and organism name
+          ./datasets summary genome taxon 4932 --reference --as-json-lines | \
+          jq -r '[.accession, .organism.organism_name] | @tsv' > ncbi_list.tmp
+          
+          echo "Combining manual list with NCBI list and removing duplicates..."
+          # Concatenate your manual list and the new NCBI list, sort them, and use 'uniq'
+          # We only use the first column (accession) for de-duplication
+          cat "$MANUAL_LIST" ncbi_list.tmp | sort -u -k1,1 > "$FINAL_IDS_FILE"
+
+      - name: Check list size
+        run: |
+          count=$(wc -l < ids.tsv)
+          echo "Found ${count} total unique fungal genomes."
 
       - name: Split id list for parallel jobs
         run: |
-          split -n l/10 sc_ids.tsv -d --additional-suffix=.tsv x
+          split -n l/10 ids.tsv -d --additional-suffix=.tsv x
 
       - name: Upload list chunks for next job
         uses: actions/upload-artifact@v4
@@ -39,36 +60,6 @@ jobs:
           name: genome-chunks
           path: x*.tsv
           overwrite: true
-
-# The below lines are if accession numebrs are being pulled from NCBI, if a custom ids.txt list was manually currated, leave lines commented out and use above code
-      #- name: Download NCBI Datasets Tool
-      #  run: |
-      #    wget -q https://ftp.ncbi.nlm.nih.gov/pub/datasets/command-line/v2/linux-amd64/datasets
-      #    chmod +x datasets
-
-      #- name: Get Fungal Genome List
-      #  run: |
-      #    export PATH=$(pwd):$PATH
-      #    ./datasets summary genome taxon 4751 --reference --as-json-lines | \
-      #    jq -r '[.accession, .organism.organism_name] | @tsv' > ids.tsv
-
-      #- name: Check list size
-      #  id: check_size
-      #  run: |
-      #    count=$(wc -l < ids.tsv)
-      #    echo "Found ${count} fungal genomes."
-      #    echo "count=${count}" >> $GITHUB_OUTPUT
-
-      #- name: Split id list for parallel jobs
-      #  run: |
-      #    split -n l/10 ids.tsv -d --additional-suffix=.tsv x
-
-      #- name: Upload list chunks for next job
-      #  uses: actions/upload-artifact@v4
-      #  with:
-      #    name: genome-chunks
-      #    path: x*.tsv
-      #    overwrite: true
 
   # --------------------------------------------------------------------------
   # JOB 2: Create sketches for each chunk in parallel
