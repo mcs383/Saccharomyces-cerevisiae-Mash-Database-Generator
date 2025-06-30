@@ -11,44 +11,41 @@ jobs:
   # --------------------------------------------------------------------------
   # JOB 1: Combine a manual list with NCBI's list and de-duplicate
   # --------------------------------------------------------------------------
-  
-  list_genomes:
+ list_genomes:
     runs-on: ubuntu-latest
     steps:
-      - name: Check Out Repository (to get manual list)
+      - name: Check Out Repository
         uses: actions/checkout@v4
 
-      - name: Download NCBI Datasets Tool
+      - name: Download NCBI Tools
         run: |
           wget -q https://ftp.ncbi.nlm.nih.gov/pub/datasets/command-line/v2/linux-amd64/datasets
           chmod +x datasets
+          sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Combine and De-duplicate Genome Lists
+      - name: Create Master Genome List
         run: |
           export PATH=$(pwd):$PATH
           MANUAL_LIST="sc_ids.tsv"
           FINAL_IDS_FILE="ids.tsv"
 
-          # Check if the manual file exists in the repository
           if [ ! -f "$MANUAL_LIST" ]; then
-            echo "ERROR: Your manual list '$MANUAL_LIST' was not found in the repository."
+            echo "ERROR: Your manual list '$MANUAL_LIST' was not found. Please create and push it."
             exit 1
           fi
           
-          echo "Fetching all S. cerevisiae (taxon 4932) reference genomes from NCBI..."
-          # Fetch the NCBI list and extract just the accession number and organism name
+          echo "Fetching NCBI list for S. cerevisiae (taxon 4932)..."
           ./datasets summary genome taxon 4932 --reference --as-json-lines | \
           jq -r '[.accession, .organism.organism_name] | @tsv' > ncbi_list.tmp
           
-          echo "Combining manual list with NCBI list and removing duplicates..."
-          # Concatenate your manual list and the new NCBI list, sort them, and use 'uniq'
-          # We only use the first column (accession) for de-duplication
+          echo "Combining lists and removing duplicates..."
           cat "$MANUAL_LIST" ncbi_list.tmp | sort -u -k1,1 > "$FINAL_IDS_FILE"
+          rm ncbi_list.tmp
 
-      - name: Check list size
+      - name: Check Final List Size
         run: |
           count=$(wc -l < ids.tsv)
-          echo "Found ${count} total unique fungal genomes."
+          echo "Created a final list with ${count} unique genomes."
 
       - name: Split id list for parallel jobs
         run: |
@@ -60,6 +57,14 @@ jobs:
           name: genome-chunks
           path: x*.tsv
           overwrite: true
+
+      - name: Upload full id list
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-id-list
+          path: ids.tsv
+          overwrite: true
+
 
   # --------------------------------------------------------------------------
   # JOB 2: Create sketches for each chunk in parallel
@@ -168,29 +173,30 @@ jobs:
           # The artifacts are placed into subdirectories named after the artifact.
           path: partial_sketches/
       
+      - name: Download final ID list
+        uses: actions/download-artifact@v4
+        with:
+          name: final-id-list
+      
       - name: Combine all sketches
         run: |
           export PATH=$(pwd):$PATH
-          FINAL_SKETCH_NAME="Fungi_RefSeq_${{ github.event.inputs.refseq_version }}.msh"
-          echo "Pasting all downloaded partial sketches into ${FINAL_SKETCH_NAME}..."
-
-          # Check if the directory with sketches exists and is not empty
-          if [ ! -d "partial_sketches" ] || [ -z "$(ls -A partial_sketches)" ]; then
-            echo "No sketch artifacts were downloaded. Cannot create final database."
+          FINAL_SKETCH_NAME="SCerevisiae_RefSeq_${{ github.event.inputs.refseq_version }}.msh"
+          echo "Pasting all partial sketches into ${FINAL_SKETCH_NAME}..."
+          if [ -z "$(ls -A partial_sketches)" ]; then
+            echo "No sketches were downloaded. Cannot create final database."
             exit 1
           fi
-          
-          # The 'find' command will locate all .msh files within the downloaded artifact subdirectories
           ./mash paste "$FINAL_SKETCH_NAME" $(find partial_sketches -name "*.msh")
 
       - name: Compress final sketch
-        run: |
-          FINAL_SKETCH_NAME="Fungi_RefSeq_${{ github.event.inputs.refseq_version }}.msh"
-          gzip "$FINAL_SKETCH_NAME"
+        run: gzip "$FINAL_SKETCH_NAME"
 
       - name: Create Release and Upload Final Sketch
         uses: softprops/action-gh-release@v2
         with:
-          name: Fungal RefSeq Database ${{ github.event.inputs.refseq_version }}
+          name: S. cerevisiae RefSeq Database ${{ github.event.inputs.refseq_version }}
           tag_name: ${{ github.event.inputs.refseq_version }}
-          files: Fungi_RefSeq_${{ github.event.inputs.refseq_version }}.msh.gz
+          files: |
+            SCerevisiae_RefSeq_${{ github.event.inputs.refseq_version }}.msh.gz
+            ids.tsv
