@@ -9,17 +9,17 @@ The workflow was adapted from the [Fungal-RefSeq-Mash-Database-Generator](https:
 
 This repository uses a single workflow (`.github/workflows/building\_sc\_mash\_sketch.yaml`) that automates the entire process using GitHub's own servers. The workflow consists of three main jobs that run in sequence:
 
-1. **Job 1: `list\_genomes**` 
+1. **Job 1: `list\_genomes`**
    * Reads a **manually** provided `sc\_ids.tsv` file from the repository containing a list of curated genome accession numbers.  
    * Connects to the NCBI database and downloads a complete list of accession numbers for all currently available *S. cerevisiae* genomes (**NCBI `taxon 4932`**) and *S. paradoxus* genomes (**NCBI `taxon 29763`**) as an outgroup.  
    * **Combines these lists and removes any duplicates** to create a final master list.  
    * Splits this master list into 10 smaller "chunk" files to enable parallel processing and uploads them as an artifact for the next job.  
-2. **Job 2: `create\_sketches** `
+2. **Job 2: `create\_sketches`**
    * This is a parallel matrix job that runs 10 jobs simultaneously.  
    * Each job is assigned one of the "chunk" files.  
    * It processes its list one genome at a time in a disk-efficient loop: it downloads a single genome, creates a Mash sketch, merges it into a combined sketch for the chunk, and then deletes the downloaded files before starting the next one. This is crucial for running within the disk space limits of the GitHub servers.  
    * Each job uploads its completed partial sketch as an artifact.  
-3. **Job 3: `combine\_sketches**`
+3. **Job 3: `combine\_sketches`**
    * This final job runs only after all 10 sketching jobs are complete.  
    * It downloads all 10 of the partial sketch artifacts and the final `ids.tsv` list.  
    * It uses `mash paste` to merge them into one final, comprehensive database sketch file.  
