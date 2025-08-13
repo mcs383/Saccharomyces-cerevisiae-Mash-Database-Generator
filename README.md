@@ -7,7 +7,7 @@ The workflow was adapted from the [Fungal-RefSeq-Mash-Database-Generator](https:
 
 ## **How it Works**
 
-This repository uses a single workflow (.github/workflows/building\_sc\_mash\_sketch.yaml) that automates the entire process using GitHub's own servers. The workflow consists of three main jobs that run in sequence:
+This repository uses a single workflow ('.github/workflows/building\_sc\_mash\_sketch.yaml') that automates the entire process using GitHub's own servers. The workflow consists of three main jobs that run in sequence:
 
 1. **Job 1: list\_genomes**  
    * Reads a **manually** provided sc\_ids.tsv file from the repository containing a list of curated genome accession numbers.  
@@ -53,6 +53,7 @@ On your own computer, you will create a sketch of your private genomes and "past
 1. **Organize your files:** Place all your private .fasta genome files into a single folder (e.g., proprietary\_genomes/).  
 2. **Run this local script:** This script sketches your private genomes and merges them with the public database.
 
+'''
 \#\!/bin/bash  
 \# \--- CONFIGURATION \---  
 PUBLIC\_DB="SCerevisiae\_RefSeq\_v1.0.msh" \# Change this to your downloaded file name  
@@ -68,6 +69,7 @@ mash paste "$FINAL\_DB" "$PUBLIC\_DB" proprietary.msh
 
 rm proprietary.msh  
 echo "✅ Done\! Your final, combined database is ready: $FINAL\_DB"
+'''
 
 You will now have a file named Final\_Combined\_Database.msh that contains all public genomes plus your private ones. This file exists only on your computer and can be used for your local analyses.
 
