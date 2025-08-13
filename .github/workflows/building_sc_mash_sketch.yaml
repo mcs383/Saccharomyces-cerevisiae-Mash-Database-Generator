@@ -11,7 +11,7 @@ jobs:
   # --------------------------------------------------------------------------
   # JOB 1: Combine a manual list with NCBI's list and de-duplicate
   # --------------------------------------------------------------------------
- list_genomes:
+  list_genomes:
     runs-on: ubuntu-latest
     steps:
       - name: Check Out Repository
@@ -44,7 +44,30 @@ jobs:
           echo "Combining lists and removing duplicates..."
           cat "$MANUAL_LIST" ncbi_list.tmp | sort -u -k1,1 > "$FINAL_IDS_FILE"
           rm ncbi_list.tmp
-  
+
+      - name: Check Final List Size
+        run: |
+          count=$(wc -l < ids.tsv)
+          echo "Created a final list with ${count} unique genomes."
+
+      - name: Split id list for parallel jobs
+        run: |
+          split -n l/10 ids.tsv -d --additional-suffix=.tsv x
+
+      - name: Upload list chunks for next job
+        uses: actions/upload-artifact@v4
+        with:
+          name: genome-chunks
+          path: x*.tsv
+          overwrite: true
+
+      - name: Upload full id list
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-id-list
+          path: ids.tsv
+          overwrite: true
+
   # --------------------------------------------------------------------------
   # JOB 2: Create sketches for each chunk in parallel
   # --------------------------------------------------------------------------
@@ -126,8 +149,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: partial-sketch-${{ matrix.chunk }}
-          # === THIS IS THE CORRECTED LINE ===
-          # Directly provide the filename that the previous step creates.
           path: chunk_${{ matrix.chunk }}.msh
           overwrite: true
 
@@ -135,7 +156,6 @@ jobs:
   # JOB 3: Combine all partial sketches (Corrected Download Logic)
   # --------------------------------------------------------------------------
   combine_sketches:
-    # This job will run even if some of the sketching jobs from the matrix failed
     if: success() || failure()
     needs: create_sketches
     runs-on: ubuntu-latest
@@ -148,8 +168,6 @@ jobs:
       - name: Download all created sketch artifacts
         uses: actions/download-artifact@v4
         with:
-          # By NOT specifying a 'name', this action downloads ALL artifacts from this workflow run.
-          # The artifacts are placed into subdirectories named after the artifact.
           path: partial_sketches/
       
       - name: Download final ID list
