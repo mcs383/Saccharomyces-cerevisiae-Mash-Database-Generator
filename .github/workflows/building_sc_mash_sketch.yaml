@@ -153,7 +153,7 @@ jobs:
           overwrite: true
 
   # --------------------------------------------------------------------------
-  # JOB 3: Combine all partial sketches (Corrected Download Logic)
+  # JOB 3: Combine all partial sketches (Corrected Variable Scope)
   # --------------------------------------------------------------------------
   combine_sketches:
     if: success() || failure()
@@ -175,19 +175,23 @@ jobs:
         with:
           name: final-id-list
       
-      - name: Combine all sketches
+      - name: Combine, Compress, and Prepare for Release
         run: |
           export PATH=$(pwd):$PATH
           FINAL_SKETCH_NAME="SCerevisiae_RefSeq_${{ github.event.inputs.refseq_version }}.msh"
+          
           echo "Pasting all partial sketches into ${FINAL_SKETCH_NAME}..."
           if [ -z "$(ls -A partial_sketches)" ]; then
             echo "No sketches were downloaded. Cannot create final database."
             exit 1
           fi
+          
+          # Combine all the partial sketches
           ./mash paste "$FINAL_SKETCH_NAME" $(find partial_sketches -name "*.msh")
-
-      - name: Compress final sketch
-        run: gzip "$FINAL_SKETCH_NAME"
+          
+          # Now, compress the file that was just created
+          echo "Compressing the final sketch..."
+          gzip "$FINAL_SKETCH_NAME"
 
       - name: Create Release and Upload Final Sketch
         uses: softprops/action-gh-release@v2
