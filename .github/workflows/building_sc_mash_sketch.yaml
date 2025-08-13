@@ -153,12 +153,16 @@ jobs:
           overwrite: true
 
   # --------------------------------------------------------------------------
-  # JOB 3: Combine all partial sketches (Corrected Variable Scope)
+  # JOB 3: Combine all partial sketches (Corrected Permissions)
   # --------------------------------------------------------------------------
   combine_sketches:
     if: success() || failure()
     needs: create_sketches
     runs-on: ubuntu-latest
+    # === THIS PERMISSIONS BLOCK IS THE FIX ===
+    permissions:
+      contents: write
+      
     steps:
       - name: Download Mash
         run: |
@@ -186,10 +190,8 @@ jobs:
             exit 1
           fi
           
-          # Combine all the partial sketches
           ./mash paste "$FINAL_SKETCH_NAME" $(find partial_sketches -name "*.msh")
           
-          # Now, compress the file that was just created
           echo "Compressing the final sketch..."
           gzip "$FINAL_SKETCH_NAME"
 
