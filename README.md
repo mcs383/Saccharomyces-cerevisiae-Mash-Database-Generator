@@ -50,7 +50,7 @@ Run the GitHub Actions workflow as described above. Download the final `.msh.gz`
 
 On your own computer, you will create a sketch of your private genomes and "paste" it into the public database you just downloaded.
 
-1. **Organize your files:** Place all your private `.fasta` genome files into a single folder (e.g., `proprietary_genomes/`).  
+1. **Organize your files:** Place all your private `.fasta` genome files into a single folder (e.g., `~/proprietary_genomes/`).  
 2. **Run this local script:** This script sketches your private genomes and merges them with the public database.
 
 ```
@@ -100,7 +100,7 @@ The number from Step 2 should match your expected total from Step 1. If they mat
 ## **How to Cite**
 
 If you use this workflow or the database it generates in your research, please cite this GitHub repository.  
-[Smardz, M. C.], & Young, E. (2025). *Saccharomyces cerevisiae Mash Database Generator: An automated GitHub Actions workflow for creating up-to-date Saccharomyces cerevisiae mash sketch databases for strain analysis* (Version 1.0). GitHub. https://github.com/mcs383/Saccharomyces-cerevisiae-Mash-Database-Generator
+Smardz, M. C., & Young, E. (2025). *Saccharomyces cerevisiae Mash Database Generator: An automated GitHub Actions workflow for creating up-to-date Saccharomyces cerevisiae mash sketch databases for strain analysis* (Version 1.0). GitHub. https://github.com/mcs383/Saccharomyces-cerevisiae-Mash-Database-Generator
 
 ## **Acknowledgments**
 
