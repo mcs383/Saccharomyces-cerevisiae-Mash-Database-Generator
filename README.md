@@ -7,36 +7,36 @@ The workflow was adapted from the [Fungal-RefSeq-Mash-Database-Generator](https:
 
 ## **How it Works**
 
-This repository uses a single workflow ('.github/workflows/building\_sc\_mash\_sketch.yaml') that automates the entire process using GitHub's own servers. The workflow consists of three main jobs that run in sequence:
+This repository uses a single workflow (`.github/workflows/building\_sc\_mash\_sketch.yaml`) that automates the entire process using GitHub's own servers. The workflow consists of three main jobs that run in sequence:
 
-1. **Job 1: list\_genomes**  
-   * Reads a **manually** provided sc\_ids.tsv file from the repository containing a list of curated genome accession numbers.  
-   * Connects to the NCBI database and downloads a complete list of accession numbers for all currently available *S. cerevisiae* genomes (**NCBI taxon 4932**) and *S. paradoxus* genomes (taxon 29763\) as an outgroup.  
+1. **Job 1: `list\_genomes**` 
+   * Reads a **manually** provided `sc\_ids.tsv` file from the repository containing a list of curated genome accession numbers.  
+   * Connects to the NCBI database and downloads a complete list of accession numbers for all currently available *S. cerevisiae* genomes (**NCBI `taxon 4932`**) and *S. paradoxus* genomes (**NCBI `taxon 29763`**) as an outgroup.  
    * **Combines these lists and removes any duplicates** to create a final master list.  
    * Splits this master list into 10 smaller "chunk" files to enable parallel processing and uploads them as an artifact for the next job.  
-2. **Job 2: create\_sketches**  
+2. **Job 2: `create\_sketches** `
    * This is a parallel matrix job that runs 10 jobs simultaneously.  
    * Each job is assigned one of the "chunk" files.  
    * It processes its list one genome at a time in a disk-efficient loop: it downloads a single genome, creates a Mash sketch, merges it into a combined sketch for the chunk, and then deletes the downloaded files before starting the next one. This is crucial for running within the disk space limits of the GitHub servers.  
    * Each job uploads its completed partial sketch as an artifact.  
-3. **Job 3: combine\_sketches**  
+3. **Job 3: `combine\_sketches**`
    * This final job runs only after all 10 sketching jobs are complete.  
-   * It downloads all 10 of the partial sketch artifacts and the final ids.tsv list.  
-   * It uses mash paste to merge them into one final, comprehensive database sketch file.  
-   * It then compresses the final sketch and creates a formal **GitHub Release**, attaching both the sketch file and the complete ids.tsv list for download.
+   * It downloads all 10 of the partial sketch artifacts and the final `ids.tsv` list.  
+   * It uses `mash paste` to merge them into one final, comprehensive database sketch file.  
+   * It then compresses the final sketch and creates a formal **GitHub Release**, attaching both the sketch file and the complete `ids.tsv` list for download.
 
 ## **How to Use This Workflow**
 
 1. **Fork this Repository:** Create your own copy of this repository by clicking the "Fork" button.  
-2. **Prepare Your Manual List (Optional):** Create or edit the sc\_ids.tsv file in this repository. Add the NCBI accession numbers and tab-separated names for any specific public strains you want to include (one per line). Commit this change.  
+2. **Prepare Your Manual List (Optional):** Create or edit the `sc\_ids.tsv` file in this repository. Add the NCBI accession numbers and tab-separated names for any specific public strains you want to include (one per line). Commit this change.  
 3. **Enable Actions:** Go to the "Actions" tab of your newly forked repository. You may need to click a button to enable workflows.  
 4. **Run the Workflow:**  
    * In the Actions tab, select **"Build a mash sketch database..."** from the list of workflows on the left.  
    * Click the **"Run workflow"** button on the right.  
-   * You will be prompted to enter a **version tag** (e.g., v1.0). This tag must not contain spaces.  
+   * You will be prompted to enter a **version tag** (e.g., `v1.0`). This tag must not contain spaces.  
    * Click the final green **"Run workflow"** button.  
 5. **Wait:** The process will take several hours to complete. You can monitor its progress on the "Actions" tab at any time.  
-6. **Download Your Database:** When the workflow is complete (it will have a green checkmark ✅), go to the main page of your repository. On the right-hand side, click on **"Releases"**. Your new database will be there, attached as a .msh.gz file and an ids.tsv file, ready to download.
+6. **Download Your Database:** When the workflow is complete (it will have a green checkmark ✅), go to the main page of your repository. On the right-hand side, click on **"Releases"**. Your new database will be there, attached as a `.msh.gz` file and an `ids.tsv` file containing the list of genome sketches in the database, ready to download.
 
 ## **How to Include Proprietary (Private) Genomes**
 
@@ -44,16 +44,16 @@ This workflow is designed to download public genomes from NCBI. To include your 
 
 #### **Stage 1: Build the Public Database Using GitHub**
 
-Run the GitHub Actions workflow as described above. Download the final .msh.gz sketch file from the "Releases" page to your local computer and unzip it.
+Run the GitHub Actions workflow as described above. Download the final `.msh.gz` sketch file from the "Releases" page to your local computer and unzip it.
 
 #### **Stage 2: Add Your Private Genomes Locally**
 
 On your own computer, you will create a sketch of your private genomes and "paste" it into the public database you just downloaded.
 
-1. **Organize your files:** Place all your private .fasta genome files into a single folder (e.g., proprietary\_genomes/).  
+1. **Organize your files:** Place all your private `.fasta` genome files into a single folder (e.g., `proprietary\_genomes/`).  
 2. **Run this local script:** This script sketches your private genomes and merges them with the public database.
 
-'''
+```
 \#\!/bin/bash  
 \# \--- CONFIGURATION \---  
 PUBLIC\_DB="SCerevisiae\_RefSeq\_v1.0.msh" \# Change this to your downloaded file name  
@@ -69,9 +69,9 @@ mash paste "$FINAL\_DB" "$PUBLIC\_DB" proprietary.msh
 
 rm proprietary.msh  
 echo "✅ Done\! Your final, combined database is ready: $FINAL\_DB"
-'''
+```
 
-You will now have a file named Final\_Combined\_Database.msh that contains all public genomes plus your private ones. This file exists only on your computer and can be used for your local analyses.
+You will now have a file named `Final\_Combined\_Database.msh` that contains all public genomes plus your private ones. This file exists only on your computer and can be used for your local analyses.
 
 ## **Verifying the Database Contents**
 
@@ -79,16 +79,19 @@ To ensure your sketch file is complete, compare the number of genomes it contain
 
 #### **Step 1: Get the Current Genome Count from NCBI**
 
-This command queries NCBI for all available *S. cerevisiae* genomes (Note: you must have the ncbi-datasets-cli tool installed).  
+This command queries NCBI for all available *S. cerevisiae* genomes (Note: you must have the `ncbi-datasets-cli` tool installed).  
+```
 datasets summary genome taxon 4932 | grep "total\_count"
-
-This will print a line like "total\_count": 1675\. This number, plus any unique outgroups and manual strains, is your target.
+```
+This will print a line like `"total\_count": 1675\`. This number, plus any unique outgroups and manual strains, is your target.
 
 #### **Step 2: Count the Genomes in Your Sketch File**
 
-Use the mash info command to count the sequences inside your final .msh file.  
+Use the `mash info` command to count the sequences inside your final `.msh` file.  
+```
 \# Replace Your\_Sketch\_File.msh with your actual file name  
 mash info Your\_Sketch\_File.msh | wc \-l
+```
 
 #### **Step 3: Compare the Numbers**
 
