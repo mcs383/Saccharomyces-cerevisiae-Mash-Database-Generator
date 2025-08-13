@@ -182,7 +182,7 @@ jobs:
       - name: Combine, Compress, and Prepare for Release
         run: |
           export PATH=$(pwd):$PATH
-          FINAL_SKETCH_NAME="SCerevisiae_RefSeq_${{ github.event.inputs.refseq_version }}.msh"
+          FINAL_SKETCH_NAME="Scerevisiae_database_${{ github.event.inputs.refseq_version }}.msh"
           
           echo "Pasting all partial sketches into ${FINAL_SKETCH_NAME}..."
           if [ -z "$(ls -A partial_sketches)" ]; then
@@ -201,5 +201,5 @@ jobs:
           name: S. cerevisiae RefSeq Database ${{ github.event.inputs.refseq_version }}
           tag_name: ${{ github.event.inputs.refseq_version }}
           files: |
-            SCerevisiae_RefSeq_${{ github.event.inputs.refseq_version }}.msh.gz
+            Scerevisiae_database_${{ github.event.inputs.refseq_version }}.msh.gz
             ids.tsv
