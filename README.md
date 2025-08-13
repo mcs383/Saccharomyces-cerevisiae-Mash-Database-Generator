@@ -54,21 +54,21 @@ On your own computer, you will create a sketch of your private genomes and "past
 2. **Run this local script:** This script sketches your private genomes and merges them with the public database.
 
 ```
-\#\!/bin/bash  
-\# \--- CONFIGURATION \---  
-PUBLIC_DB="SCerevisiae_RefSeq_v1.0.msh" \# Change this to your downloaded file name  
+#!/bin/bash  
+# --- CONFIGURATION ---  
+PUBLIC_DB="SCerevisiae_RefSeq_v1.0.msh" # Change this to your downloaded file name  
 PROPRIETARY_DIR="proprietary_genomes"  
 FINAL_DB="Final_Combined_Database.msh"
 
-\# \--- SCRIPT START \---  
+# --- SCRIPT START ---  
 echo "1. Sketching proprietary genomes..."  
-mash sketch \-o proprietary.msh "${PROPRIETARY_DIR}"/\*.fasta
+mash sketch -o proprietary.msh "${PROPRIETARY_DIR}"/*.fasta
 
 echo "2. Pasting proprietary sketch into the public database..."  
 mash paste "$FINAL_DB" "$PUBLIC_DB" proprietary.msh
 
 rm proprietary.msh  
-echo "✅ Done\! Your final, combined database is ready: $FINAL_DB"
+echo "✅ Done! Your final, combined database is ready: $FINAL_DB"
 ```
 
 You will now have a file named `Final_Combined_Database.msh` that contains all public genomes plus your private ones. This file exists only on your computer and can be used for your local analyses.
@@ -83,24 +83,24 @@ This command queries NCBI for all available *S. cerevisiae* genomes (Note: you m
 ```
 datasets summary genome taxon 4932 | grep "total_count"
 ```
-This will print a line like `"total_count": 1675\`. This number, plus any unique outgroups and manual strains, is your target.
+This will print a line like `"total_count": 1675`. This number, plus any unique outgroups and manual strains, is your target.
 
 #### **Step 2: Count the Genomes in Your Sketch File**
 
 Use the `mash info` command to count the sequences inside your final `.msh` file.  
 ```
-\# Replace Your_Sketch_File.msh with your actual file name  
-mash info Your_Sketch_File.msh | wc \-l
+# Replace Your_Sketch_File.msh with your actual file name  
+mash info Your_Sketch_File.msh | wc -l
 ```
 
 #### **Step 3: Compare the Numbers**
 
-The number from Step 2 should match your expected total from Step 1\. If they match, your database is verified\!
+The number from Step 2 should match your expected total from Step 1. If they match, your database is verified!
 
 ## **How to Cite**
 
 If you use this workflow or the database it generates in your research, please cite this GitHub repository.  
-\[Smardz, M. C.\], & Young, E. (2025). *Saccharomyces cerevisiae Mash Database Generator: An automated GitHub Actions workflow for creating up-to-date Saccharomyces cerevisiae mash sketch databases for strain analysis* (Version 1.0). GitHub. https://github.com/mcs383/Saccharomyces-cerevisiae-Mash-Database-Generator
+[Smardz, M. C.], & Young, E. (2025). *Saccharomyces cerevisiae Mash Database Generator: An automated GitHub Actions workflow for creating up-to-date Saccharomyces cerevisiae mash sketch databases for strain analysis* (Version 1.0). GitHub. https://github.com/mcs383/Saccharomyces-cerevisiae-Mash-Database-Generator
 
 ## **Acknowledgments**
 
