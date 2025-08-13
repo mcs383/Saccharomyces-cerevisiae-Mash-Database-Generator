@@ -9,63 +9,54 @@ on:
 
 jobs:
   # --------------------------------------------------------------------------
-  # JOB 1: Combine a manual list with NCBI's list and de-duplicate
+  # JOB 1: Create an exhaustive list from NCBI GenBank and a manual file
   # --------------------------------------------------------------------------
- list_genomes:
+  list_genomes:
     runs-on: ubuntu-latest
     steps:
-      - name: Check Out Repository
+      - name: Check Out Repository (to access your manual list)
         uses: actions/checkout@v4
-
+  
       - name: Download NCBI Tools
         run: |
           wget -q https://ftp.ncbi.nlm.nih.gov/pub/datasets/command-line/v2/linux-amd64/datasets
           chmod +x datasets
           sudo apt-get update && sudo apt-get install -y jq
-
+  
       - name: Create Master Genome List
         run: |
           export PATH=$(pwd):$PATH
           MANUAL_LIST="sc_ids.tsv"
           FINAL_IDS_FILE="ids.tsv"
-
+  
           if [ ! -f "$MANUAL_LIST" ]; then
-            echo "ERROR: Your manual list '$MANUAL_LIST' was not found. Please create and push it."
-            exit 1
+            echo "WARNING: Your manual list '$MANUAL_LIST' was not found. Creating an empty one."
+            touch "$MANUAL_LIST"
           fi
           
-          echo "Fetching NCBI list for S. cerevisiae (taxon 4932)..."
-          ./datasets summary genome taxon 4932 --reference --as-json-lines | \
+          echo "Fetching ALL S. cerevisiae genomes from NCBI GenBank (taxon 4932)..."
+          # NOTE: We have REMOVED the --reference flag to get everything
+          ./datasets summary genome taxon 4932 --as-json-lines | \
           jq -r '[.accession, .organism.organism_name] | @tsv' > ncbi_list.tmp
           
-          echo "Combining lists and removing duplicates..."
-          cat "$MANUAL_LIST" ncbi_list.tmp | sort -u -k1,1 > "$FINAL_IDS_FILE"
-          rm ncbi_list.tmp
-
+          echo "Fetching S. paradoxus genomes (taxon 29763) as an outgroup..."
+          ./datasets summary genome taxon 29763 --as-json-lines | \
+          jq -r '[.accession, .organism.organism_name] | @tsv' > sparadoxus_list.tmp
+          
+          echo "Combining manual list with NCBI lists and removing duplicates..."
+          # Combine all lists, sort by the accession number (the first column),
+          # and keep only the unique lines. This is the de-duplication step.
+          cat "$MANUAL_LIST" ncbi_list.tmp sparadoxus_list.tmp | sort -u -k1,1 > "$FINAL_IDS_FILE"
+  
+          # Clean up temporary files
+          rm ncbi_list.tmp sparadoxus_list.tmp
+  
       - name: Check Final List Size
         run: |
           count=$(wc -l < ids.tsv)
-          echo "Created a final list with ${count} unique genomes."
+          echo "Created a final, de-duplicated list with ${count} unique genomes."
 
-      - name: Split id list for parallel jobs
-        run: |
-          split -n l/10 ids.tsv -d --additional-suffix=.tsv x
-
-      - name: Upload list chunks for next job
-        uses: actions/upload-artifact@v4
-        with:
-          name: genome-chunks
-          path: x*.tsv
-          overwrite: true
-
-      - name: Upload full id list
-        uses: actions/upload-artifact@v4
-        with:
-          name: final-id-list
-          path: ids.tsv
-          overwrite: true
-
-
+  
   # --------------------------------------------------------------------------
   # JOB 2: Create sketches for each chunk in parallel
   # --------------------------------------------------------------------------
