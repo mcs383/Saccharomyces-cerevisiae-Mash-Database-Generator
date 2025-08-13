@@ -9,53 +9,41 @@ on:
 
 jobs:
   # --------------------------------------------------------------------------
-  # JOB 1: Create an exhaustive list from NCBI GenBank and a manual file
+  # JOB 1: Combine a manual list with NCBI's list and de-duplicate
   # --------------------------------------------------------------------------
-  list_genomes:
+ list_genomes:
     runs-on: ubuntu-latest
     steps:
-      - name: Check Out Repository (to access your manual list)
+      - name: Check Out Repository
         uses: actions/checkout@v4
-  
+
       - name: Download NCBI Tools
         run: |
           wget -q https://ftp.ncbi.nlm.nih.gov/pub/datasets/command-line/v2/linux-amd64/datasets
           chmod +x datasets
           sudo apt-get update && sudo apt-get install -y jq
-  
+
       - name: Create Master Genome List
         run: |
           export PATH=$(pwd):$PATH
           MANUAL_LIST="sc_ids.tsv"
           FINAL_IDS_FILE="ids.tsv"
-  
+
+          # This check is now more flexible.
           if [ ! -f "$MANUAL_LIST" ]; then
-            echo "WARNING: Your manual list '$MANUAL_LIST' was not found. Creating an empty one."
+            echo "WARNING: Manual list '$MANUAL_LIST' not found. Proceeding with NCBI list only."
+            # Create an empty file so the 'cat' command below doesn't fail.
             touch "$MANUAL_LIST"
           fi
           
-          echo "Fetching ALL S. cerevisiae genomes from NCBI GenBank (taxon 4932)..."
-          # NOTE: We have REMOVED the --reference flag to get everything
+          echo "Fetching NCBI list for S. cerevisiae (taxon 4932)..."
+          # NOTE: Removed the --reference flag to get ALL genomes
           ./datasets summary genome taxon 4932 --as-json-lines | \
           jq -r '[.accession, .organism.organism_name] | @tsv' > ncbi_list.tmp
           
-          echo "Fetching S. paradoxus genomes (taxon 29763) as an outgroup..."
-          ./datasets summary genome taxon 29763 --as-json-lines | \
-          jq -r '[.accession, .organism.organism_name] | @tsv' > sparadoxus_list.tmp
-          
-          echo "Combining manual list with NCBI lists and removing duplicates..."
-          # Combine all lists, sort by the accession number (the first column),
-          # and keep only the unique lines. This is the de-duplication step.
-          cat "$MANUAL_LIST" ncbi_list.tmp sparadoxus_list.tmp | sort -u -k1,1 > "$FINAL_IDS_FILE"
-  
-          # Clean up temporary files
-          rm ncbi_list.tmp sparadoxus_list.tmp
-  
-      - name: Check Final List Size
-        run: |
-          count=$(wc -l < ids.tsv)
-          echo "Created a final, de-duplicated list with ${count} unique genomes."
-
+          echo "Combining lists and removing duplicates..."
+          cat "$MANUAL_LIST" ncbi_list.tmp | sort -u -k1,1 > "$FINAL_IDS_FILE"
+          rm ncbi_list.tmp
   
   # --------------------------------------------------------------------------
   # JOB 2: Create sketches for each chunk in parallel
