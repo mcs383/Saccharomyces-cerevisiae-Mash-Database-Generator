@@ -103,7 +103,7 @@ The number from Step 2 should match your expected total from Step 1. If they mat
 
 If you use this workflow or the database it generates in your research, please cite this GitHub repository. This helps us track the impact of our work and justify its continued maintenance:
 
->Smardz, M. C., & Young, E. (2025). *Saccharomyces cerevisiae Mash Database Generator: An automated GitHub Actions workflow for creating up-to-date Saccharomyces cerevisiae mash sketch databases for strain analysis* (Version 1.0). GitHub. https://github.com/mcs383/Saccharomyces-cerevisiae-Mash-Database-Generator
+>Smardz, M. C.m(2025). *Saccharomyces cerevisiae Mash Database Generator: An automated GitHub Actions workflow for creating up-to-date Saccharomyces cerevisiae mash sketch databases for strain analysis* (Version 1.0). GitHub. https://github.com/mcs383/Saccharomyces-cerevisiae-Mash-Database-Generator
 
 ## **Acknowledgments**
 
